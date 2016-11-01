@@ -1,0 +1,33 @@
+version: '2'
+services:
+  bot:
+    image: rocketchat/hubot-rocketchat
+    volumes:
+    - $PWD/scripts:/home/hubot/scripts
+    links:
+    - redis
+    environment:
+    - REDIS_URL=redis://redis:6379
+    - ROCKETCHAT_URL=https://chat.arbisoft.com
+    - ROCKETCHAT_ROOM=
+    - LISTEN_ON_ALL_PUBLIC=true
+    - ROCKETCHAT_USER=crackbot
+    - ROCKETCHAT_PASSWORD=
+    - ROCKETCHAT_AUTH=password
+    - HUBOT_REMIND_KEY=WYWGSDGSGGWSTEW4564654
+    - HUBOT_TEAM_ADMIN=yasser.bashir
+    - BOT_NAME=crackbot
+    - EXTERNAL_SCRIPTS=hubot-help
+    - SET_CONTAINER_TIMEZONE=true
+    - CONTAINER_TIMEZONE=Asia/Karachi
+    - RESPOND_TO_DM=True
+  redis:
+    image: redis
+    ports:
+    - "6379"
+    volumes:
+    - /Users/sachchal/data:/data
+    command: redis-server --appendonly yes
+    environment:
+    - SET_CONTAINER_TIMEZONE=true
+    - CONTAINER_TIMEZONE=Asia/Karachi

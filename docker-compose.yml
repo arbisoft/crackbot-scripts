@@ -1,7 +1,7 @@
 version: '2'
 services:
   bot:
-    image: rocketchat/hubot-rocketchat
+    image: arbisoft/hubot-rocketchat
     volumes:
     - $PWD/scripts:/home/hubot/scripts
     links:
@@ -17,10 +17,9 @@ services:
     - HUBOT_REMIND_KEY=WYWGSDGSGGWSTEW4564654
     - HUBOT_TEAM_ADMIN=yasser.bashir
     - BOT_NAME=crackbot
-    - EXTERNAL_SCRIPTS=hubot-help
+    - EXTERNAL_SCRIPTS=hubot-tell,hubot-standup-alarm,hubot-remind-advanced,hubot-help,hubot-team,hubot-redis-brain,hubot-redis-brain-docker
     - SET_CONTAINER_TIMEZONE=true
     - CONTAINER_TIMEZONE=Asia/Karachi
-    - RESPOND_TO_DM=True
   redis:
     image: redis
     ports:
@@ -31,3 +30,6 @@ services:
     environment:
     - SET_CONTAINER_TIMEZONE=true
     - CONTAINER_TIMEZONE=Asia/Karachi
+volumes:
+  logvolume01: {}
+

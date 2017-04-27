@@ -8,7 +8,7 @@
 #   None
 #
 # Commands:
-#   hubot projectlogs
+#   None
 #
 # Author:
 #   Tayyab <tayyab.razzaq@arbisoft.com>
@@ -51,13 +51,17 @@ getProjectLogsStatus = (robot, username, id) ->
       logs = formatLogs(data, username)
       sendMessageToUser(robot, username, logs)
 
-sendMessageToPersons = (robot , userDetails) ->
-  userlist = ["tayyab.razzaq", "ayesha.mahmood"]
-  for key,value of userDetails
-    if key in userlist
+sendMessageToPersons = (robot , userDetails, flag) ->
+  if flag
+    userlist = ["tayyab.razzaq", "ayesha.mahmood", "yasser.bashir"]
+    for key,value of userDetails
+      if key in userlist
+        getProjectLogsStatus(robot, key, value)
+  else
+    for key,value of userDetails
       getProjectLogsStatus(robot, key, value)
 
-getPersons = (robot) ->
+getPersons = (robot, flag) ->
   url = "https://hrdb.arbisoft.com/project-logs/incomplete-log-users"
   robot.http(url).get() (err, res, body) ->
     if res.statusCode isnt 200
@@ -70,16 +74,22 @@ getPersons = (robot) ->
       for person in data
         console.log person
         userDetails[person["username"]] = person["id"]
-      sendMessageToPersons(robot, userDetails)
+      sendMessageToPersons(robot, userDetails, flag)
 
 
 module.exports = (robot) ->
 
   cronJob = require('cron').CronJob
-  pattern = '00 00 14 * * 1-5'
-  new cronJob(pattern, (->
-    do everyMinute
+  new cronJob('00 00 12 * * 1-5', (->
+    do everyDay
   ), null, true)
 
-  everyMinute = ->
-    getPersons(robot)
+  new cronJob('00 00 16 * * 1,3,5', (->
+    do alternateDay
+  ), null, true)
+
+  everyDay = ->
+    getPersons(robot, true)
+
+  alternateDay = ->
+    getPersons(robot, false)

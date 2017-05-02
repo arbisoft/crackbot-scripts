@@ -35,46 +35,71 @@ formatLogs = (projectLogs, username) ->
   logs += "To complete the logs, go to https://hrdb.arbisoft.com/app\nThank you!"
   return logs
 
-sendMessageToUser = (robot, username, logs) ->
-  (robot.adapter.chatdriver.getDirectMessageRoomId username).then (DM) ->
+
+sendMessageToUser = (robot, username, id, logs, userDetails) ->
+  (robot.adapter.chatdriver.getDirectMessageRoomId username).then( (DM) ->
+    sendMessageToPersons(robot, userDetails)
     robot.adapter.chatdriver.sendMessageByRoomId logs, DM.rid
 
-getProjectLogsStatus = (robot, username, id) ->
-  url = "https://hrdb.arbisoft.com/project-logs/incomplete-logs?person_id=#{id}"
-  robot.http(url).get() (err, res, body) ->
-    if res.statusCode isnt 200
-      res.send "Request didn't come back HTTP 200 :("
-      return
+  , (error) ->
+    if error.error == 'error-invalid-user'
+      robot.logger.error error.error
+      sendMessageToPersons(robot, userDetails)
+    else
+      user = {
+        username: username,
+        id: id
+      }
+      robot.logger.error error.error
+      userDetails.push(user)
+      setTimeout ->
+        sendMessageToPersons(robot, userDetails)
+      ,60000
+  )
 
+getProjectLogsStatus = (robot, username, id, userDetails) ->
+  url = "https://hrdb.arbisoft.com/project-logs/incomplete-logs?person_id=#{id}"
+  robot.http(url).header('Accept', 'application/json', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive', 'Allow': 'GET, HEAD, OPTIONS').get() (err, res, body) ->
+    if res.statusCode isnt 200
+      robot.logger.error res.statusCode + " " + url + " " + username
+      sendMessageToPersons(robot, userDetails)
+      return
     data = JSON.parse body
     if data.length != 0
       logs = formatLogs(data, username)
-      sendMessageToUser(robot, username, logs)
+      sendMessageToUser(robot, username, id, logs, userDetails)
+    else
+      sendMessageToPersons(robot, userDetails)
 
-sendMessageToPersons = (robot , userDetails, flag) ->
-  if flag
-    userlist = ["tayyab.razzaq", "ayesha.mahmood", "yasser.bashir"]
-    for key,value of userDetails
-      if key in userlist
-        getProjectLogsStatus(robot, key, value)
-  else
-    for key,value of userDetails
-      getProjectLogsStatus(robot, key, value)
+sendMessageToPersons = (robot , userDetails) ->
+  if userDetails.length != 0
+    user = userDetails.pop()
+    setTimeout ->
+      getProjectLogsStatus(robot, user.username, user.id, userDetails)
+    ,1000
 
 getPersons = (robot, flag) ->
   url = "https://hrdb.arbisoft.com/project-logs/incomplete-log-users"
   robot.http(url).get() (err, res, body) ->
     if res.statusCode isnt 200
-      res.send "Request didn't come back HTTP 200 :("
+      robot.logger.error "Request didn't come back HTTP 200 :("
       return
+    userlist = ["tayyab.razzaq", "yasser.bashir", "ayesha.mahmood"]
 
     data = JSON.parse body
     if data.length != 0
-      userDetails = {}
+      userDetails = []
       for person in data
-        console.log person
-        userDetails[person["username"]] = person["id"]
-      sendMessageToPersons(robot, userDetails, flag)
+        user = {
+          username: person["username"],
+          id: person["id"]
+        }
+        if flag
+          if person["username"] in userlist
+            userDetails.push(user)
+        else
+          userDetails.push(user)
+      sendMessageToPersons(robot, userDetails)
 
 
 module.exports = (robot) ->

@@ -78,13 +78,12 @@ sendMessageToPersons = (robot , userDetails) ->
       getProjectLogsStatus(robot, user.username, user.id, userDetails)
     ,1000
 
-getPersons = (robot, flag) ->
+getPersons = (robot) ->
   url = "https://hrdb.arbisoft.com/project-logs/incomplete-log-users"
   robot.http(url).get() (err, res, body) ->
     if res.statusCode isnt 200
       robot.logger.error "Request didn't come back HTTP 200 :("
       return
-    userlist = ["tayyab.razzaq", "yasser.bashir", "ayesha.mahmood"]
 
     data = JSON.parse body
     if data.length != 0
@@ -94,27 +93,17 @@ getPersons = (robot, flag) ->
           username: person["username"],
           id: person["id"]
         }
-        if flag
-          if person["username"] in userlist
-            userDetails.push(user)
-        else
-          userDetails.push(user)
+        userDetails.push(user)
       sendMessageToPersons(robot, userDetails)
 
 
 module.exports = (robot) ->
 
   cronJob = require('cron').CronJob
-  new cronJob('00 00 12 * * 1-5', (->
+
+  new cronJob('00 00 16 * * 1-5', (->
     do everyDay
   ), null, true)
 
-  new cronJob('00 00 16 * * 1,3,5', (->
-    do alternateDay
-  ), null, true)
-
   everyDay = ->
-    getPersons(robot, true)
-
-  alternateDay = ->
-    getPersons(robot, false)
+    getPersons(robot)

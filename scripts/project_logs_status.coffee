@@ -16,22 +16,19 @@
 
 formatLogs = (projectLogs, username, totalPersons) ->
   sample1 = "Please complete your project logs for the following week(s):"
-  sample2 = "Your project logs for below weeks are still not complete. "
+  sample2 = "Your project logs for weeks below are still not complete. "
   sample2 += "Please complete them as soon and accurately as possible. We need this information for billing purposes."
-  sample3 = "you are one of the remaining " + totalPersons + " people who still haven't completed their project logs.\n"
+  sample3 = "You do know that the last 10 people to complete the logs owe a treat to the entire company, right? ;)"
+  sample3 += "\nyou are one of the remaining " + totalPersons + " people who still haven't completed their project logs.\n"
   sample3 += sample1
 
-  headingSamples = [sample1, sample2, sample2, sample3, sample3]
+  headingSamples = [sample1, sample2, sample3, sample3, sample3]
 
   date = new Date()
   day = date.getDay()
   todays_heading = headingSamples[day - 1]
 
   logs = "Hey @" + username
-
-
-  if day == 5
-    logs += "You do know the last 10 people to complete the logs owe a treat to the entire company, right? ;)\n"
 
   logs += ",\n" + todays_heading + "\n"
   for person_week_log in projectLogs

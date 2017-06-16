@@ -14,19 +14,8 @@
 #   Tayyab <tayyab.razzaq@arbisoft.com>
 
 
-formatLogs = (projectLogs, username, totalPersons) ->
-  sample1 = "Please complete your project logs for the following week(s):"
-  sample2 = "Your project logs for weeks below are still not complete. "
-  sample2 += "Please complete them as soon and accurately as possible. We need this information for billing purposes."
-  sample3 = "You do know that the last 10 people to complete the logs owe a treat to the entire company, right? ;)"
-  sample3 += "\nyou are one of the remaining " + totalPersons + " people who still haven't completed their project logs.\n"
-  sample3 += sample1
-
-  headingSamples = [sample1, sample2, sample3, sample3, sample3]
-
-  date = new Date()
-  day = date.getDay()
-  todays_heading = headingSamples[day - 1]
+formatLogs = (projectLogs, username, logsMsgSample) ->
+  todays_heading = logsMsgSample.msg
 
   logs = "Hey @" + username
 
@@ -47,45 +36,48 @@ formatLogs = (projectLogs, username, totalPersons) ->
     logs += person_week_log['week_starting'] + " to " + person_week_log['week_ending'] + projects + "\n"
 
   logs += "To complete the logs, go to https://hrdb.arbisoft.com/app\nThank you!"
-  return logs
+
+  logsMsg = {
+    msg: logs,
+    attachments: [{
+      image_url: logsMsgSample.link
+    }]
+  }
+  return logsMsg
 
 
-sendMessageToUser = (robot, username, id, logs, userDetails, totalPersons) ->
-  (robot.adapter.chatdriver.getDirectMessageRoomId username).then((DM) ->
-    sendMessageToPersons(robot, userDetails, totalPersons)
-    robot.adapter.chatdriver.sendMessageByRoomId logs, DM.rid
+sendMessageToUser = (robot, user, logsMsg, userDetails, logsMsgSample) ->
+  (robot.adapter.chatdriver.getDirectMessageRoomId user.username).then((DM) ->
+    sendMessageToPersons(robot, userDetails, logsMsgSample)
+    robot.adapter.chatdriver.sendMessageByRoomId logsMsg, DM.rid
 
   , (error) ->
     if error.error == 'error-invalid-user'
       robot.logger.error error.error
-      sendMessageToPersons(robot, userDetails, totalPersons)
+      sendMessageToPersons(robot, userDetails, logsMsgSample)
     else
-      user = {
-        username: username,
-        id: id
-      }
       robot.logger.error error.error
       userDetails.push(user)
       setTimeout ->
-        sendMessageToPersons(robot, userDetails, totalPersons)
+        sendMessageToPersons(robot, userDetails, logsMsgSample)
       , 60000
   )
 
-getProjectLogsStatus = (robot, username, id, userDetails, totalPersons) ->
-  url = "https://hrdb.arbisoft.com/project-logs/incomplete-logs?person_id=#{id}"
+getProjectLogsStatus = (robot, user, userDetails, logsMsgSample) ->
+  url = "https://hrdb.arbisoft.com/project-logs/incomplete-logs?person_id=#{user.id}"
   robot.http(url).get() (err, res, body) ->
     if res.statusCode isnt 200
-      robot.logger.error res.statusCode + " " + url + " " + username
-      sendMessageToPersons(robot, userDetails, totalPersons)
+      robot.logger.error res.statusCode + " " + url + " " + user.username
+      sendMessageToPersons(robot, userDetails, logsMsgSample)
       return
     data = JSON.parse body
     if data.length != 0
-      logs = formatLogs(data, username, totalPersons)
-      sendMessageToUser(robot, username, id, logs, userDetails, totalPersons)
+      logsMsg = formatLogs(data, user.username, logsMsgSample)
+      sendMessageToUser(robot, user, logsMsg, userDetails, logsMsgSample)
     else
-      sendMessageToPersons(robot, userDetails, totalPersons)
+      sendMessageToPersons(robot, userDetails, logsMsgSample)
 
-sendMessageToPersons = (robot, userDetails, totalPersons) ->
+sendMessageToPersons = (robot, userDetails, logsMsgSample) ->
   if userDetails.length != 0
 
     index = Math.floor(Math.random() * userDetails.length)
@@ -95,9 +87,31 @@ sendMessageToPersons = (robot, userDetails, totalPersons) ->
     timeIndex = Math.floor(Math.random() * timeArray.length)
 
     setTimeout ->
-      getProjectLogsStatus(robot, user.username, user.id, userDetails, totalPersons)
+      getProjectLogsStatus(robot, user, userDetails, logsMsgSample)
     , timeArray[timeIndex]
 
+
+getMessageSampleByDay = (robot, userDetails, totalPersons) ->
+  url = 'http://crackbot-reminders.s3.amazonaws.com/project-logs-reminder/logs.json'
+  robot.http(url).get() (err, res, body) ->
+    if res.statusCode isnt 200
+      robot.logger.error res.statusCode + " " + url
+      return
+
+    complete_week = JSON.parse body
+    date = new Date()
+    day = date.getDay()
+    week_days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+    current_day = week_days[day - 1]
+    current_day_samples = complete_week[current_day]
+    index = Math.floor(Math.random() * current_day_samples.length)
+    selected_sample = current_day_samples[index]
+
+    logsMsgSample = {
+      msg: selected_sample['text_message'].replace("totalPersons", totalPersons.toString()),
+      link: selected_sample['link']
+    }
+    sendMessageToPersons(robot, userDetails, logsMsgSample)
 
 getPersons = (robot) ->
   url = "https://hrdb.arbisoft.com/project-logs/incomplete-log-users"
@@ -116,7 +130,7 @@ getPersons = (robot) ->
           id: person["id"]
         }
         userDetails.push(user)
-      sendMessageToPersons(robot, userDetails, totalPersons)
+      getMessageSampleByDay(robot, userDetails, totalPersons)
 
 
 module.exports = (robot) ->

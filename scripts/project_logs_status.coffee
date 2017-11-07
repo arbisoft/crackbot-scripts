@@ -35,7 +35,7 @@ formatLogs = (projectLogs, username, logsMsgSample) ->
       projects += " )"
     logs += person_week_log['week_starting'] + " to " + person_week_log['week_ending'] + projects + "\n"
 
-  logs += "To complete the logs, go to https://hrdb.arbisoft.com/app\nThank you!"
+  logs += "To complete the logs, go to https://erp.arbisoft.com/app\nThank you!"
 
   logsMsg = {
     msg: logs,
@@ -64,7 +64,7 @@ sendMessageToUser = (robot, user, logsMsg, userDetails, logsMsgSample) ->
   )
 
 getProjectLogsStatus = (robot, user, userDetails, logsMsgSample) ->
-  url = "https://hrdb.arbisoft.com/project-logs/incomplete-logs?person_id=#{user.id}"
+  url = "https://erp.arbisoft.com/project-logs/incomplete-logs?person_id=#{user.id}"
   robot.http(url).get() (err, res, body) ->
     if res.statusCode isnt 200
       robot.logger.error res.statusCode + " " + url + " " + user.username
@@ -114,7 +114,7 @@ getMessageSampleByDay = (robot, userDetails, totalPersons) ->
     sendMessageToPersons(robot, userDetails, logsMsgSample)
 
 getPersons = (robot) ->
-  url = "https://hrdb.arbisoft.com/project-logs/incomplete-log-users"
+  url = "https://erp.arbisoft.com/project-logs/incomplete-log-users"
   robot.http(url).get() (err, res, body) ->
     if res.statusCode isnt 200
       robot.logger.error "Request didn't come back HTTP 200 :("

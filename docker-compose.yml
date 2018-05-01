@@ -21,6 +21,12 @@ services:
     - SET_CONTAINER_TIMEZONE=true
     - CONTAINER_TIMEZONE=Asia/Karachi
     - RESPOND_TO_DM=true
+    - TZ=Asia/Karachi
+    logging:
+    #limit logs to 200MB (4rotations of 50M each)
+      options:
+        max-size: "50m"
+        max-file: "4"
   redis:
     image: redis
     ports:
